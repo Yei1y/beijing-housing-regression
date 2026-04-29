@@ -1,0 +1,4 @@
+﻿Test,Statistic,p-value,Conclusion
+Breusch-Pagan (LM),2219.6020179323205,0.0,Heteroscedastic
+Breusch-Pagan (F),47.3548822077449,0.0,Heteroscedastic
+Goldfeld-Quandt,0.9857499696246526,0.8715012338254078,Homoscedastic
