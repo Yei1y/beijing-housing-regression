@@ -165,6 +165,11 @@ df["log_price"] = np.log(df["price"])
 df["log_square"] = np.log(df["square"])
 df["log_followers"] = np.log1p(df["followers"])
 
+# 过滤交易年份：仅保留 2011-2017（数据已知范围）
+n_before_year = len(df)
+df = df[df["trade_year"].between(2011, 2017)].copy()
+print(f"  过滤交易年份：{n_before_year - len(df)} 行被删除（不在 2011-2017 范围内）")
+
 print("  已创建：trade_year, trade_month, property_age, dist_center, log_price, log_square, log_followers")
 
 # ── 9. 编码分类变量 ──
@@ -179,6 +184,8 @@ cat_cols = {
     "fiveYearsProperty": "category",
     "floor_level": "category",
     "district": "category",
+    "trade_year": "category",
+    "trade_month": "category",
 }
 
 for col, dtype in cat_cols.items():
@@ -226,7 +233,8 @@ print_section("12. 标准化（用于正则化模型）")
 # 识别虚拟变量列（不进行标准化）
 dummy_patterns = [
     "buildingType_", "buildingStructure_", "renovationCondition_",
-    "elevator_", "subway_", "fiveYearsProperty_", "floor_level_", "district_"
+    "elevator_", "subway_", "fiveYearsProperty_", "floor_level_", "district_",
+    "trade_year_", "trade_month_"
 ]
 dummy_cols = [c for c in feature_cols if any(p in c for p in dummy_patterns)]
 numeric_cols = [c for c in feature_cols if c not in dummy_cols]

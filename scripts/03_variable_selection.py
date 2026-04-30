@@ -43,7 +43,8 @@ print(f"全量训练集：{X_train.shape[0]:,} 行 x {X_train.shape[1]} 个特�
 print_section("2. 向前选择（基于 AIC，子样本）")
 
 # 逐步回归用子样本（统计上足够做变量选择）
-subsample_size = min(50000, len(X_train))
+# 20k 样本量：300+倍样本/特征比，对变量选择绰绰有余
+subsample_size = min(20000, len(X_train))
 idx_sub = np.random.choice(X_train.index, subsample_size, replace=False)
 X_sub = X_train.loc[idx_sub]
 y_sub = y_train.loc[idx_sub]
@@ -82,7 +83,7 @@ def forward_selection_aic(X, y, max_features=30):
             current_aic = best_aic
             history.append({"step": step + 1, "var": best_var, "aic": best_aic,
                             "rsquared": best_model.rsquared})
-            print(f"  第{step+1:2d}步：+ {best_var:35s}  AIC={best_aic:.1f},  R²={best_model.rsquared:.4f}")
+            print(f"  第{step+1:2d}步：+ {best_var:35s}  AIC={best_aic:.1f},  R2={best_model.rsquared:.4f}")
         else:
             print(f"  在第 {step} 步停止：AIC 不再改善")
             break
@@ -220,8 +221,8 @@ if len(consensus_vars) == 0:
 # 拟合 OLS
 X_train_consensus = sm.add_constant(X_train[consensus_vars])
 ols_consensus = sm.OLS(y_train, X_train_consensus).fit()
-print(f"\nOLS R²：{ols_consensus.rsquared:.4f}")
-print(f"OLS 调整 R²：{ols_consensus.rsquared_adj:.4f}")
+print(f"\nOLS R2：{ols_consensus.rsquared:.4f}")
+print(f"OLS 调整 R2：{ols_consensus.rsquared_adj:.4f}")
 print(f"AIC：{ols_consensus.aic:.1f}")
 print(f"\|系数|前十：")
 coef_df = pd.DataFrame({

@@ -9,7 +9,10 @@ output/*.pkl
 
 # 编辑器/IDE 个人配置
 .vscode/
-.claude/settings.local.json
+
+# Claude Code 配置与记忆（不上传 GitHub）
+.claude/
+CLAUDE.md
 
 # 系统文件
 Thumbs.db

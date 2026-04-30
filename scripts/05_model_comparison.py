@@ -55,7 +55,7 @@ print(f"共识变量：{len(consensus_vars)} 个")
 # ── 2. 定义交互/多项式变量 ──
 print_section("2. 选择交互/多项式变量")
 
-key_interact_vars = ["dist_center", "Lat", "Lng", "trade_year", "ladderRatio", "DOM"]
+key_interact_vars = ["dist_center", "Lat", "Lng", "ladderRatio", "DOM"]
 key_interact_vars = [v for v in key_interact_vars if v in feature_cols]
 print(f"选中的交互变量（{len(key_interact_vars)} 个）：{key_interact_vars}")
 
@@ -273,7 +273,7 @@ print_section("6. 可视化")
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-# 测试集 R²
+# 测试集 R2
 models_name = results_df["Model"].tolist()
 r2_vals = results_df["R2"].tolist()
 rmse_vals = results_df["RMSE_price"].tolist()
@@ -286,8 +286,8 @@ colors[best_r2_idx] = CB_PALETTE[1]
 axes[0].barh(range(len(models_name)), r2_vals, color=colors[::-1], alpha=0.8)
 axes[0].set_yticks(range(len(models_name)))
 axes[0].set_yticklabels(models_name[::-1])
-axes[0].set_xlabel("R²")
-axes[0].set_title("测试集 R² 比较")
+axes[0].set_xlabel("R2")
+axes[0].set_title("测试集 R2 比较")
 for i, v in enumerate(r2_vals):
     axes[0].text(v + 0.002, len(models_name) - 1 - i, f"{v:.4f}", va="center", fontsize=9)
 
