@@ -21,3 +21,8 @@ Thumbs.db
 # Word 临时文件
 ~$*.docx
 ~$*.doc
+
+# LaTeX 辅助文件
+report/*.aux
+report/*.log
+report/*.out

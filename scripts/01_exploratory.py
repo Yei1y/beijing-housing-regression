@@ -25,7 +25,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import probplot
 from utils import (
-    setup_font, load_data, print_section, save_fig, save_table, CB_PALETTE
+    setup_font, load_data, print_section, save_fig, save_table,
+    CB_PALETTE, DIVERGING_CMAP, SEQUENTIAL_CMAP,
 )
 
 setup_font()
@@ -122,7 +123,7 @@ corr = df[numeric_cols].corr()
 
 mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
 fig, ax = plt.subplots(figsize=(12, 10))
-sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap="RdBu_r",
+sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap=DIVERGING_CMAP,
             center=0, square=True, linewidths=0.5, vmin=-1, vmax=1,
             cbar_kws={"shrink": 0.8})
 ax.set_title("数值变量 Pearson 相关系数矩阵")
@@ -139,7 +140,7 @@ print_section("6. 房价地理分布")
 fig, ax = plt.subplots(figsize=(12, 10))
 geo_sample = df.sample(min(10000, len(df)), random_state=42)
 sc = ax.scatter(geo_sample["Lng"], geo_sample["Lat"],
-                c=geo_sample["price"], cmap="viridis",
+                c=geo_sample["price"], cmap=SEQUENTIAL_CMAP,
                 alpha=0.5, s=5, vmin=0, vmax=np.percentile(df["price"], 98))
 plt.colorbar(sc, ax=ax, label="单价（元/㎡）")
 ax.set_xlabel("经度")
@@ -168,6 +169,9 @@ save_fig("price_by_district.png", "01_eda")
 print_section("8. 价格时间趋势")
 
 df["trade_year"] = pd.to_datetime(df["tradeTime"], errors="coerce").dt.year
+df = df[df["trade_year"].between(2011, 2017)].copy()
+print(f"过滤交易年份后：{len(df):,} 行（2011-2017）")
+
 yearly = df.groupby("trade_year")["price"].agg(["mean", "median", "count", "std"])
 yearly = yearly.dropna()
 print(yearly.to_string())

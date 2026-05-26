@@ -24,6 +24,8 @@ from statsmodels.stats.stattools import durbin_watson
 import logging
 logging.getLogger("statsmodels").setLevel(logging.WARNING)
 
+from sklearn.preprocessing import PolynomialFeatures
+
 from utils import (
     setup_font, print_section, save_fig, save_table, CB_PALETTE
 )
@@ -176,7 +178,69 @@ print(vif_df.head(20).to_string())
 print(f"\nVIF > 10 的变量数：{vif_df['VIF > 10'].sum()}")
 
 save_table(vif_df, "vif_results.csv")
+
+# VIF 柱状图（top-20，排除常数项）
+vif_no_const = vif_df[vif_df["Variable"] != "const"]
+vif_top20 = vif_no_const.head(20).sort_values("VIF", ascending=True)
+fig, ax = plt.subplots(figsize=(10, 8))
+colors_vif = [CB_PALETTE[0] if v > 10 else CB_PALETTE[3]
+              for v in vif_top20["VIF"]]
+ax.barh(range(len(vif_top20)), vif_top20["VIF"], color=colors_vif, alpha=0.8)
+ax.set_yticks(range(len(vif_top20)))
+ax.set_yticklabels(vif_top20["Variable"], fontsize=9)
+ax.axvline(x=10, color="red", linestyle="--", linewidth=1.5, label="VIF = 10 阈值")
+ax.set_xlabel("VIF 值")
+ax.set_title("方差膨胀因子（前 20 名变量）")
+ax.legend()
+save_fig("vif_bar_chart.png", "04_diagnostics")
+
 print(f"  VIF 用时：{time.time() - t1:.1f}s")
+
+# ── 4b. 多项式模型条件数 ──
+t1 = time.time()
+print_section("4b. 多项式模型条件数")
+
+# 复用脚本05的多项式扩展逻辑
+key_interact_vars = ["dist_center", "Lat", "Lng", "ladderRatio", "DOM"]
+key_interact_vars = [v for v in key_interact_vars if v in feature_cols]
+remaining_vars = [v for v in feature_cols if v not in key_interact_vars]
+
+poly_full = PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)
+X_poly = np.hstack([
+    X_train[remaining_vars].values,
+    poly_full.fit_transform(X_train[key_interact_vars].values)
+])
+poly_feat_names = remaining_vars + poly_full.get_feature_names_out(key_interact_vars).tolist()
+X_poly_df = pd.DataFrame(X_poly, columns=poly_feat_names, index=X_train.index)
+
+# 计算条件数（使用子样本以加速）
+poly_sample = min(5000, len(X_poly_df))
+idx_poly = np.random.choice(X_poly_df.index, poly_sample, replace=False)
+X_poly_sub = X_poly_df.loc[idx_poly].values
+
+# 标准化后计算条件数
+X_poly_std = (X_poly_sub - X_poly_sub.mean(axis=0)) / (X_poly_sub.std(axis=0) + 1e-10)
+cond_poly = np.linalg.cond(X_poly_std)
+print(f"多项式模型特征数：{X_poly_df.shape[1]}")
+print(f"条件数（5,000行子样本，标准化后）：{cond_poly:.2e}")
+
+# 交互项模型条件数
+poly_interact = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+X_interact = np.hstack([
+    X_train[remaining_vars].values,
+    poly_interact.fit_transform(X_train[key_interact_vars].values)
+])
+interact_feat_names = remaining_vars + poly_interact.get_feature_names_out(key_interact_vars).tolist()
+X_interact_df = pd.DataFrame(X_interact, columns=interact_feat_names, index=X_train.index)
+
+idx_int = np.random.choice(X_interact_df.index, poly_sample, replace=False)
+X_int_sub = X_interact_df.loc[idx_int].values
+X_int_std = (X_int_sub - X_int_sub.mean(axis=0)) / (X_int_sub.std(axis=0) + 1e-10)
+cond_int = np.linalg.cond(X_int_std)
+print(f"交互项模型特征数：{X_interact_df.shape[1]}")
+print(f"条件数（5,000行子样本，标准化后）：{cond_int:.2e}")
+
+print(f"  多项式条件数用时：{time.time() - t1:.1f}s")
 
 # ── 5. 异方差检验 ──
 t1 = time.time()
@@ -343,6 +407,9 @@ norm_stat, norm_pval = stats.normaltest(residuals)
 print(f"""
 残差正态性检验 p={norm_pval:.6e}
 VIF > 10：{vif_df['VIF > 10'].sum()} 个变量 | 最大 VIF：{vif_df['VIF'].max():.1f}（{vif_df.iloc[0]['Variable']}）
+条件数（全变量OLS）：{np.linalg.cond(X_diag.values):.2e}
+条件数（多项式模型）：{cond_poly:.2e}
+条件数（交互项模型）：{cond_int:.2e}
 异方差：BP p={bp_pval:.6e} | GQ p={gq_pval:.6e}
 自相关：DW={dw:.4f}
 强影响点：{n_influential_cooks}（{100*n_influential_cooks/n_obs:.2f}%）超过 Cook's D 阈值

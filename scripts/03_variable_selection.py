@@ -166,15 +166,22 @@ for alpha in alphas:
     coef_path.append(lasso.coef_)
 coef_path = np.array(coef_path)
 
+# 只画 top-10 变量的路径，避免 64 条线混在一起
+top10_idx = np.argsort(np.abs(lasso_cv.coef_))[-10:]
+top10_names = [feature_cols[i] for i in top10_idx]
+
 fig, ax = plt.subplots(figsize=(12, 6))
-for i in range(min(coef_path.shape[1], 49)):
-    ax.plot(np.log10(alphas), coef_path[:, i], alpha=0.6, linewidth=0.8)
+for rank, i in enumerate(top10_idx):
+    color = CB_PALETTE[rank % len(CB_PALETTE)]
+    ax.plot(np.log10(alphas), coef_path[:, i],
+            alpha=0.8, linewidth=1.2, color=color,
+            label=feature_cols[i])
 ax.axvline(np.log10(lasso_cv.alpha_), color="red", linestyle="--",
-           label=f"最优 alpha = {lasso_cv.alpha_:.4f}")
+           label=f"最优 alpha = {lasso_cv.alpha_:.6f}")
 ax.set_xlabel("log(alpha)")
-ax.set_ylabel("系数")
-ax.set_title("LASSO 正则化路径")
-ax.legend(loc="best", fontsize=9)
+ax.set_ylabel("系数值")
+ax.set_title("LASSO 正则化路径（前 10 个变量）")
+ax.legend(loc="best", fontsize=8, ncol=2)
 save_fig("lasso_path.png", "03_selection")
 
 # 提取 LASSO 选中的变量

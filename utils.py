@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.colors as mcolors
 import pandas as pd
 import numpy as np
 
@@ -19,21 +20,25 @@ OUTPUT_DIR = PROJECT_ROOT / "output"
 FIGURES_DIR = OUTPUT_DIR / "figures"
 TABLES_DIR = OUTPUT_DIR / "tables"
 
-# ── Matplotlib 全局配置 ──
-plt.rcParams.update({
-    "figure.dpi": 150,
-    "figure.figsize": (10, 6),
-    "axes.unicode_minus": False,
-})
-_attempted_font = False
+# ── 配色方案（学术蓝橙，Nature 子刊风格）──
+CB_PALETTE = ["#4DBBD5", "#F39B7F", "#00A087", "#91D1C2", "#8491B4", "#FCC5A1"]
+
+# ── 自定义 colormap ──
+# 发散色图：蓝-白-红，用于相关性热力图等
+DIVERGING_CMAP = mcolors.LinearSegmentedColormap.from_list(
+    "academic_diverging",
+    ["#4DBBD5", "#F7F7F7", "#F39B7F"],
+)
+
+# 顺序色图：浅橙-深绿，用于地理散点等连续值映射
+SEQUENTIAL_CMAP = mcolors.LinearSegmentedColormap.from_list(
+    "academic_sequential",
+    ["#FCC5A1", "#F39B7F", "#4DBBD5", "#00A087"],
+)
 
 
 def setup_font():
-    """配置中文字体，确保图表能正常显示中文标签。"""
-    global _attempted_font
-    if _attempted_font:
-        return
-    _attempted_font = True
+    """配置中文字体和全局绘图参数，确保所有脚本风格一致。"""
     candidates = [
         "SimHei",
         "Microsoft YaHei",
@@ -50,9 +55,17 @@ def setup_font():
         except Exception:
             continue
 
-
-# ── 配色方案（色盲友好）──
-CB_PALETTE = ["#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B3", "#937860"]
+    plt.rcParams.update({
+        "axes.unicode_minus": False,
+        "axes.titlesize": 13,
+        "axes.labelsize": 11,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+        "figure.dpi": 150,
+        "savefig.dpi": 200,
+        "savefig.bbox": "tight",
+    })
 
 
 # ── 辅助函数 ──

@@ -306,40 +306,58 @@ for i, v in enumerate(rmse_vals):
 
 save_fig("model_comparison.png", "05_comparison")
 
-# ── 7. 最佳模型系数图 ──
-print_section("7. 最佳模型系数")
-# 选出最优 OLS 模型（排除 Ridge/LASSO 因尺度不同不好直接比系数）
-best_ols_name = results_df[~results_df["Model"].str.contains("Ridge|LASSO")].iloc[0]["Model"]
-print(f"最佳 OLS 模型：{best_ols_name}")
-
-# 获取对应的模型和特征名
-if "交互" in best_ols_name:
-    best_ols = ols_interact
-    best_feat_names = interact_feat_names
-elif "多项式" in best_ols_name:
-    best_ols = ols_poly
-    best_feat_names = poly_feat_names
-elif "筛选" in best_ols_name:
-    best_ols = ols_sel
-    best_feat_names = consensus_vars
-else:
-    best_ols = ols_full
-    best_feat_names = feature_cols
-
-# 绘制前 15 个系数的条形图（按绝对值）
-coef_series = pd.Series(best_ols.params.drop("const", errors="ignore"), index=best_feat_names[:len(best_ols.params)-1])
+# ── 7. 共识变量 OLS 系数图 ──
+print_section("7. 共识变量 OLS 系数图")
+# 始终使用共识变量 OLS 绘制系数图（系数合理，可经济解释）
+coef_series = pd.Series(
+    ols_sel.params.drop("const", errors="ignore"),
+    index=consensus_vars[:len(ols_sel.params) - 1]
+)
 top_coefs = coef_series.abs().sort_values(ascending=False).head(15)
 top_coef_vals = coef_series[top_coefs.index]
 
 fig, ax = plt.subplots(figsize=(10, 7))
-colors_coef = [CB_PALETTE[1] if v > 0 else CB_PALETTE[0] for v in top_coef_vals]
-ax.barh(range(len(top_coef_vals)), top_coef_vals, color=colors_coef[::-1], alpha=0.8)
+colors_coef = [CB_PALETTE[0] if v > 0 else CB_PALETTE[1] for v in top_coef_vals]
+ax.barh(range(len(top_coef_vals)), top_coef_vals.values[::-1],
+        color=colors_coef[::-1], alpha=0.8)
 ax.set_yticks(range(len(top_coef_vals)))
-ax.set_yticklabels(top_coefs.index[::-1], fontsize=9)
+ax.set_yticklabels(top_coef_vals.index[::-1], fontsize=9)
 ax.axvline(x=0, color="gray", linestyle="-", linewidth=0.5)
-ax.set_xlabel("系数")
-ax.set_title(f"最佳模型系数（{best_ols_name}，前 15 名）")
-save_fig(f"best_model_coefficients.png", "05_comparison")
+ax.set_xlabel("系数值")
+ax.set_title("共识变量 OLS 模型系数（前 15 名）")
+save_fig("best_model_coefficients.png", "05_comparison")
+
+# ── 7b. 预测值 vs 实际值散点图 ──
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.scatter(y_test, y_pred_sel, alpha=0.1, s=3, color=CB_PALETTE[0])
+lims = [min(y_test.min(), y_pred_sel.min()),
+        max(y_test.max(), y_pred_sel.max())]
+ax.plot(lims, lims, "r--", linewidth=1, label="45° 参考线")
+ax.set_xlabel("实际 log(价格)")
+ax.set_ylabel("预测 log(价格)")
+ax.set_title("预测值 vs 实际值（共识变量 OLS）")
+ax.legend()
+r2_sel = r2_score(y_test, y_pred_sel)
+ax.text(0.05, 0.92, f"R² = {r2_sel:.4f}", transform=ax.transAxes,
+        fontsize=12, verticalalignment="top")
+save_fig("prediction_vs_actual.png", "05_comparison")
+
+# ── 7c. 区域固定效应系数图 ──
+district_coefs = {k: v for k, v in ols_sel.params.items()
+                  if k.startswith("district_")}
+if district_coefs:
+    dist_series = pd.Series(district_coefs).sort_values()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    colors_dist = [CB_PALETTE[0] if v > 0 else CB_PALETTE[1]
+                   for v in dist_series.values]
+    ax.barh(range(len(dist_series)), dist_series.values,
+            color=colors_dist, alpha=0.8)
+    ax.set_yticks(range(len(dist_series)))
+    ax.set_yticklabels(dist_series.index, fontsize=9)
+    ax.axvline(x=0, color="gray", linestyle="-", linewidth=0.5)
+    ax.set_xlabel("系数值（相对基期区域）")
+    ax.set_title("区域固定效应系数")
+    save_fig("district_coefficients.png", "05_comparison")
 
 # ── 8. 关键数值结果 ──
 print_section("8. 关键数值结果")
@@ -353,3 +371,46 @@ for i, row in results_df.iterrows():
     print(f"  {i+1}. {row['Model']:20s}  R2={row['R2']:.4f}  RMSE={row['RMSE_price']:.1f}  MAE={row['MAE_price']:.1f}")
 
 print(f"\n脚本 05 完成，总用时：{time.time() - t0:.1f}s")
+
+# ── 9. DOM 稳健性检验 ──
+print_section("9. DOM 稳健性检验")
+
+# 设定1：包含 DOM + DOM_missing（现有设定，即全变量OLS）
+print("设定1：包含 DOM + DOM_missing（基准）")
+X_train_c1 = sm.add_constant(X_train)
+ols_dom1 = sm.OLS(y_train, X_train_c1).fit()
+X_test_c1 = sm.add_constant(X_test)
+y_pred_dom1 = ols_dom1.predict(X_test_c1)
+r2_dom1 = r2_score(y_test, y_pred_dom1)
+print(f"  R2={r2_dom1:.4f}")
+
+# 设定2：完全剔除 DOM 及 DOM_missing
+print("设定2：剔除 DOM 及 DOM_missing")
+dom_cols = [c for c in feature_cols if c in ["DOM", "DOM_missing"]]
+no_dom_cols = [c for c in feature_cols if c not in dom_cols]
+X_train_c2 = sm.add_constant(X_train[no_dom_cols])
+ols_dom2 = sm.OLS(y_train, X_train_c2).fit()
+X_test_c2 = sm.add_constant(X_test[no_dom_cols])
+y_pred_dom2 = ols_dom2.predict(X_test_c2)
+r2_dom2 = r2_score(y_test, y_pred_dom2)
+print(f"  R2={r2_dom2:.4f}")
+
+# 核心变量系数对比
+core_vars = ["dist_center", "Lat", "Lng", "elevator", "subway", "ladderRatio", "square"]
+coef_comparison = pd.DataFrame({
+    "Variable": core_vars,
+    "Coef_含DOM": [ols_dom1.params.get(v, np.nan) for v in core_vars],
+    "Coef_无DOM": [ols_dom2.params.get(v, np.nan) for v in core_vars],
+})
+coef_comparison["Diff"] = coef_comparison["Coef_含DOM"] - coef_comparison["Coef_无DOM"]
+coef_comparison["Diff_pct"] = (coef_comparison["Diff"] / coef_comparison["Coef_含DOM"].abs() * 100).round(2)
+
+print("\n核心变量系数对比：")
+print(coef_comparison.to_string(index=False))
+
+# DOM_missing 系数
+if "DOM_missing" in ols_dom1.params.index:
+    print(f"\nDOM_missing 系数：{ols_dom1.params['DOM_missing']:.6f}（p={ols_dom1.pvalues['DOM_missing']:.6e}）")
+
+# 保存结果
+save_table(coef_comparison, "dom_robustness.csv")
