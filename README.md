@@ -121,7 +121,7 @@ $$
 为考察关键连续变量的非线性边际效应，对 `dist_center`、`Lat`、`Lng`、`ladderRatio`、`DOM` 共 5 个变量做二阶完全扩展：
 
 $$
-\log(\text{Price}) = \beta_0 + \boldsymbol{X}'\boldsymbol{\beta} + \boldsymbol{Z}'\boldsymbol{\gamma} + \operatorname{vec}(\boldsymbol{Z} \otimes \boldsymbol{Z})'\boldsymbol{\theta} + \varepsilon
+\log(\text{Price}) = \beta_0 + \boldsymbol{X}'\boldsymbol{\beta} + \boldsymbol{Z}'\boldsymbol{\gamma} + \text{vec}(\boldsymbol{Z} \otimes \boldsymbol{Z})'\boldsymbol{\theta} + \varepsilon
 $$
 
 $\boldsymbol{Z} \otimes \boldsymbol{Z}$ 包含全部二次项与两两交互项。`trade_year` 不再参与扩展——时间非线性已由年度虚拟变量灵活捕捉，若再引入其平方项只会人为制造共线性。
@@ -132,7 +132,7 @@ $\boldsymbol{Z} \otimes \boldsymbol{Z}$ 包含全部二次项与两两交互项�
 
 ### 3.4 工程选择（为什么这样做）
 
-- **手写影响诊断而非调用 `statsmodels.get_influence()`**：在 254,528 × 64 的规模上，`get_influence()` 需要构造完整的影响矩阵，实测无法在合理时间内完成。脚本 04 改为直接计算帽子矩阵对角元 $h_{ii}=\operatorname{diag}(\boldsymbol{X}(\boldsymbol{X}'\boldsymbol{X})^{-1}\boldsymbol{X}')$，再据此推导外部学生化残差与 Cook's 距离（[`scripts/04_model_diagnostics.py`](scripts/04_model_diagnostics.py)）。
+- **手写影响诊断而非调用 `statsmodels.get_influence()`**：在 254,528 × 64 的规模上，`get_influence()` 需要构造完整的影响矩阵，实测无法在合理时间内完成。脚本 04 改为直接计算帽子矩阵对角元 $h_{ii}=\text{diag}(\boldsymbol{X}(\boldsymbol{X}'\boldsymbol{X})^{-1}\boldsymbol{X}')$，再据此推导外部学生化残差与 Cook's 距离（[`scripts/04_model_diagnostics.py`](scripts/04_model_diagnostics.py)）。
 - **回归诊断在 20,000 行随机子样本上完成**：子样本的样本/特征比超过 300:1，对 VIF、BP、DW 等诊断统计量充分；这一妥协在第八节如实记录。
 - **删除泄露变量**：`communityAverage`、`totalPrice` 与目标变量存在确定性或半确定性关系，`Cid`、`url`、`id` 无泛化价值，共删除 5 列。
 - **标准化只作用于数值特征**：16 个数值特征经 `StandardScaler` 标准化后供 Ridge/LASSO 使用，48 个虚拟变量保持 0/1 原值，避免破坏哑变量的解释性。
