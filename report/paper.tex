@@ -36,6 +36,21 @@
 % ── 超链接 ──
 \usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black]{hyperref}
 
+% ── 代码附录 ──
+\usepackage{listings}
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\footnotesize,
+    numbers=none,
+    showstringspaces=false,
+    columns=flexible,
+    tabsize=4,
+    breaklines=true,
+    breakatwhitespace=false,
+    aboveskip=0pt,
+    belowskip=0pt,
+}
+
 % ── 首行缩进 ──
 \usepackage{indentfirst}
 \setlength{\parindent}{2em}
@@ -86,11 +101,11 @@
 % ──────────────────────────────
 \section{引言}
 
-住房兼具消费与投资属性，其价格形成机制是城市经济学的核心议题。北京市作为中国政治文化中心，2011至2017年间二手房均价从约2.5万元/m$^{2}$上升至约6万元/m$^{2}$。这一时期伴随快速城镇化、宽松货币政策和调控政策（如「京十五条」「9·30新政」等）的交替作用，呈现出典型的政策周期性特征。
+住房兼具消费与投资属性，其价格形成机制是城市经济学的核心议题。北京市作为中国政治文化中心，2011至2017年间二手房均价从约2.5万元/m$^{2}$上升至约6万元/m$^{2}$。这一时期伴随快速城镇化、宽松货币政策和调控政策（如「京十五条」「9·30新政」等）的交替作用，呈现出典型的政策周期性特征。住房价格的剧烈波动直接影响居民购房决策、财富分配与城市空间结构演化，准确识别房价的影响因素及其边际效应对房地产市场调控政策的科学制定具有重要的现实意义。
 
 特征价格模型是住房价格研究的经典框架，由Rosen\cite{rosen1974}在Lancaster\cite{lancaster1966}消费者理论基础上系统发展而来。该模型的核心思想是：异质性商品的价格由其特征隐含价格决定。在实证方法层面，LASSO回归\cite{tibshirani1996}通过L1惩罚实现自动变量选择，Breusch-Pagan检验\cite{breusch1979}和White稳健标准误\cite{white1980}已成为异方差处理的标准工具。国内方面，郑思齐等\cite{zheng2005}较早将特征价格模型应用于北京住房市场。然而，已有研究较少在同一框架内系统比较多种回归方法的表现差异，也往往忽视了高缺失率变量的处理偏倚和复杂模型的可解释性损失。
 
-本研究基于链家北京2011--2017年微观交易数据，构建了从数据预处理、探索性分析、变量选择、模型诊断到多模型比较的完整回归分析流程。主要贡献体现在三个方面。第一，系统比较了六种回归模型在预测精度与经济可解释性之间的权衡。第二，分析了多项式模型因多重共线性引发的系数膨胀问题。第三，强调核心变量的半弹性解释，在预测精度与可解释性之间寻求恰当的平衡。
+本研究基于链家北京2011--2017年微观交易数据，构建了从数据预处理、描述统计分析、变量选择、模型比较到模型诊断的完整回归分析流程。主要贡献体现在三个方面。第一，系统比较了六种回归模型在预测精度与经济可解释性之间的权衡。第二，分析了多项式模型因多重共线性引发的系数膨胀问题。第三，强调核心变量的半弹性解释，在预测精度与可解释性之间寻求恰当的平衡。
 
 % ──────────────────────────────
 %  二、数据来源与预处理
@@ -99,7 +114,7 @@
 
 \subsection{数据来源与变量定义}
 
-本研究使用链家北京二手房交易数据（2011--2017年），原始数据包含318\,621条交易记录和26个变量。表~\ref{tab:variable_definition}~列出了主要变量及其含义。
+本研究使用链家北京二手房交易数据（2011--2017年），来源于Kaggle开放数据平台（\url{https://www.kaggle.com/datasets/ruiqurm/lianjia}），收录了链家网（bj.lianjia.com）公开的北京二手房成交记录，涵盖交易价格、房屋属性、地理位置及社区特征等多维信息。原始数据包含318\,621条交易记录和26个变量。表~\ref{tab:variable_definition}~列出了主要变量及其含义。
 
 \begin{table}[H]
 \centering
@@ -133,11 +148,15 @@
 将数据按80/20比例随机划分为训练集（254\,528条）和测试集（63\,632条）。数值型特征经标准化处理后用于Ridge和LASSO正则化模型，虚拟变量不进行标准化。
 
 % ──────────────────────────────
-%  三、探索性数据分析
+%  三、描述统计统计分析
 % ──────────────────────────────
-\section{探索性数据分析}
+\section{描述统计统计分析}
 
-图~\ref{fig:price_dist}~展示了价格分布与对数变换效果。原始价格偏度为1.31，呈明显右偏；对数变换后偏度降至$-0.59$，分布接近对称，验证了对数变换的合理性。Q-Q图尾部的偏离表明对数正态假设仍有不足，为后文使用HC3稳健标准误提供了依据。
+表~\ref{tab:descriptive_stats}~报告了关键变量的描述统计结果。原始价格均值为43\,562元/m$^{2}$，中位数为38\,752元/m$^{2}$，偏度为1.31，呈明显右偏分布，高价位存在长尾。对数变换后偏度降至$-0.59$，分布趋近对称。样本中有电梯的房源占57.7\%，临近地铁的房源占60.1\%，满五年的房源占64.6\%。梯户比中位数为0.33，挂牌天数中位数为6天，反映多数房源在短期内成交的特征。
+
+\input{../output/tables/descriptive_stats_latex.tex}
+
+图~\ref{fig:price_dist}~进一步展示了价格分布与对数变换效果。原始价格偏度为1.31，呈明显右偏；对数变换后偏度降至$-0.59$，分布接近对称，验证了对数变换的合理性。Q-Q图尾部的偏离表明对数正态假设仍有不足，为后文使用HC3稳健标准误提供了依据。
 
 \begin{figure}[H]
 \centering
@@ -164,6 +183,15 @@
 \label{fig:geo}
 \end{figure}
 
+图~\ref{fig:district_price}~从区域维度量化了上述空间差异。东城、西城均价超过7万元/m$^{2}$，朝阳、海淀紧随其后（约5--6万元/m$^{2}$），而房山、平谷等远郊区均价不足3万元/m$^{2}$，最高与最低区域价差接近三倍。各区域样本量差异较大，朝阳区交易量最大（超过6万条），平谷区最少（约3\,000条），反映了北京二手房市场的活跃度在空间上的不均匀分布。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{01_eda/price_by_district.png}
+\caption{各区域平均单价对比}
+\label{fig:district_price}
+\end{figure}
+
 图~\ref{fig:price_trend}~为分年度价格趋势。2011--2015年初为平缓上涨阶段，2015年下半年后加速攀升，均价从约4万元/m$^{2}$跃升至约7万元/m$^{2}$。这一非线性趋势表明，将\textit{trade\_year}作为连续变量会施加「年增幅恒定」的不当约束。因此，本文采用年份虚拟变量替代，让数据自行估计每年的基准价格水平。
 
 \begin{figure}[H]
@@ -188,7 +216,7 @@
 
 其中$\log(\text{Price}_{it})$为第$i$条交易在第$t$期的对数价格，$\bm{X}_{it}$包含\textit{dist\_center}（距市中心距离）、\textit{Lat}（纬度）、\textit{Lng}（经度）、\textit{square}（建筑面积）、\textit{ladderRatio}（梯户比）、\textit{DOM}（挂牌天数）等连续型房屋和区位特征。$\gamma_t$为时间固定效应，由年度虚拟变量（\textit{trade\_year\_2012}至\textit{trade\_year\_2017}，以2011年为基期）和月度虚拟变量（\textit{trade\_month\_2}至\textit{trade\_month\_12}，以1月为基期）共同实现。$\delta_k$为区域固定效应。
 
-该设定的关键优势在于不施加年度价格增幅恒定的线性约束，允许数据自行估计每年的基准价格水平。第三节的探索性分析已表明2011--2017年房价趋势呈明显非线性特征，2015年前平缓上涨、2015年后加速攀升，因此$\gamma_t$的灵活设定远优于线性趋势变量。月度虚拟变量则进一步控制季节性波动。
+该设定的关键优势在于不施加年度价格增幅恒定的线性约束，允许数据自行估计每年的基准价格水平。第三节的描述统计分析已表明2011--2017年房价趋势呈明显非线性特征，2015年前平缓上涨、2015年后加速攀升，因此$\gamma_t$的灵活设定远优于线性趋势变量。月度虚拟变量则进一步控制季节性波动。
 
 为探索空间和房屋属性变量的非线性边际效应，对5个关键连续变量构造多项式扩展模型：
 
@@ -220,72 +248,7 @@ LASSO交叉验证选择的最优惩罚参数为$\alpha=0.0001$，恰好位于搜
 这一现象的数据解释是：64个候选特征中绝大多数都与房价存在统计上显著的关联，强预测信号在特征空间中广泛分布，LASSO无法通过L1惩罚将有效信号压缩为零。这与真实模型稀疏的隐含前提相悖，住房价格通常受众多微效因素共同影响。因此LASSO在本应用中本质上退化为了普通OLS，这也解释了为何在后文的模型比较中二者的预测表现几乎完全一致。
 
 % ──────────────────────────────
-%  五、模型诊断
-% ──────────────────────────────
-\section{模型诊断}
-
-基于全变量OLS模型（子样本20\,000行），对经典线性回归的假设条件进行系统检验。选择20\,000行子样本出于两方面考虑：其一，\texttt{statsmodels}的影响诊断（帽子矩阵、Cook's距离等）在全样本（25万行）上计算开销较大；其二，20\,000行样本的样本/特征比超过300:1，在统计上已完全充分。
-
-\subsection{诊断检验结果}
-
-\begin{table}[H]
-\centering
-\caption{模型诊断结果汇总}
-\label{tab:diagnostics}
-\begin{tabular}{lp{10cm}}
-\toprule
-检验项目 & 结果 \\
-\midrule
-VIF $>$ 10 变量数 & 9个：buildingStructure系列、square、log\_square、trade\_year\_2016/2015/2017 \\
-最大VIF（不含常数项） & 492.4（buildingStructure\_6） \\
-条件数 & $4.59\times10^{5}$（较原模型 $7.84\times10^{6}$ 大幅改善） \\
-Breusch-Pagan检验 & LM=957.6，$p=1.8\times10^{-159}$，拒绝同方差 \\
-Goldfeld-Quandt检验 & $F=0.979$，$p=0.857$，不拒绝同方差 \\
-Durbin-Watson统计量 & 1.966，无自相关 \\
-Cook's D异常点比例 & 4.74\%（947/20\,000）超过阈值 \\
-HC3下显著性改变量 & 1个变量（fiveYearsProperty\_1.0） \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.7\textwidth]{04_diagnostics/vif_bar_chart.png}
-\caption{方差膨胀因子（前20名变量，红色虚线为VIF=10阈值）}
-\label{fig:vif}
-\end{figure}
-
-\subsection{多重共线性讨论}
-
-表~\ref{tab:diagnostics}~报告了VIF诊断结果。\textit{buildingStructure\_6}和\textit{buildingStructure\_2}存在严重的多重共线性。这与\textit{buildingStructure}变量的类别分布密切相关：某些结构类别的占比极低，导致相应的虚拟变量与其他结构类别之间呈现近乎完全的线性关系。此外，\textit{square}和\textit{log\_square}之间的高度相关性也反映了面积变量在对数-线性变换后的共线性问题。部分年份虚拟变量的VIF超过10，这是以2011年为高基期、多年度同时纳入模型时的自然结果。
-
-对于以OLS为基础的统计论文，9个VIF大于10的变量虽然不影响模型的整体预测能力，但会膨胀个体系数的标准误、降低估计精度。加入时间固定效应后条件数从$7.84\times10^{6}$降至$4.59\times10^{5}$，这是因为原模型中的\textit{trade\_year}连续变量与其平方项之间存在大量共线性，被年份虚拟变量替代后这一来源得到消除。在OLS与多项式组合模型中，多重共线性问题因高阶项的加入而显著加剧，详见第~\ref{sec:poly_inflation}~节。
-
-\subsection{异方差与残差分析}
-
-Breusch-Pagan检验在1\%水平上显著拒绝同方差假设，而Goldfeld-Quandt检验未能检测到异方差。两个检验结论的不一致根源在于检验功效和敏感性的差异：BP检验对一般形式的异方差均敏感，而GQ检验仅对排序后单调变化的方差敏感。
-
-残差诊断图显示，当拟合值增大时残差幅度呈现扩散趋势，这一漏斗状模式支持BP检验的结论，即样本中存在不可忽略的异方差。
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.75\textwidth]{04_diagnostics/residual_diagnostics.png}
-\caption{残差诊断图（第一行：残差vs拟合值、正态Q-Q图、尺度-位置图；第二行：残差分布、残差vs杠杆值、实际值vs预测值）}
-\label{fig:residual}
-\end{figure}
-
-\subsection{稳健标准误}
-
-采用HC3稳健标准误对OLS系数进行校正。结果表明校正后仅一个变量\textit{fiveYearsProperty\_1.0}的显著性判断发生改变，从$p=0.048$变为$p=0.053$，略超5\%阈值。这一结果优于原模型，说明加入时间固定效应后异方差对推断的干扰进一步减弱。因此，HC3稳健标准误的使用主要作为学术严谨性的必要组成部分，而非因为实质性改变了结论。
-
-截面数据的异方差在真实世界中是常态而非异常。本研究从事前和事后两个层面确保了推断的可靠性。事前，半对数设定将绝对差异转化为相对差异，从数据变换的根源上缓解了方差随价格水平递增的趋势。事后，HC3稳健协方差矩阵的修正进一步消除了异方差对标准误估计的干扰。因此，即便Breusch-Pagan检验明确拒绝了同方差假设，核心变量边际效应的推断结果仍然是稳健且可靠的。
-
-\subsection{DOM缺失值处理的稳健性}
-
-\textit{DOM}缺失率达50\%，为检验其处理方式对核心结论的影响，本文比较了两种设定：包含\textit{DOM}与\textit{DOM\_missing}（基准）和完全剔除\textit{DOM}及其指示变量。结果表明，剔除\textit{DOM}后模型$R^{2}$从0.8185微降至0.8175，核心变量系数的最大变化不足1\%：距市中心距离系数从$-2.689$变为$-2.698$（差异0.33\%），梯户比系数从0.168变为0.167（差异0.42\%）。此外，\textit{DOM\_missing}的系数显著为负（$-0.028$，$p<0.001$），表明\textit{DOM}缺失的房源系统性地价格偏低，与非随机缺失的推论一致。上述结果证实，\textit{DOM}缺失值的处理方式未对核心变量的经济推断构成实质性威胁。
-
-% ──────────────────────────────
-%  六、模型比较与结果解释
+%  五、模型比较与结果解释
 % ──────────────────────────────
 \section{模型比较与结果解释}
 
@@ -365,9 +328,74 @@ OLS与多项式组合模型在预测指标上表现最佳，$R^{2}=0.829$，RMSE
 
 \subsection{时间趋势的进一步讨论}
 
-在共识变量OLS模型中，以2011年为基期，年份虚拟变量的系数呈现清晰的递增模式：\textit{trade\_year\_2012}（$+0.15$）、\textit{trade\_year\_2013}（$+0.48$）、\textit{trade\_year\_2014}（$+0.49$）、\textit{trade\_year\_2015}（$+0.54$）、\textit{trade\_year\_2016}（$+0.83$）和\textit{trade\_year\_2017}（$+1.15$）。这一序列的特征在于：2013年较2012年有大幅跳跃（$+0.33$），而2013--2015年间增幅相对平缓，年增约0.03至0.05，2015年后再次加速。该模式与探索性数据分析中观察到的「2011--2015年初平缓上涨、2015下半年后加速攀升」完全吻合。
+在共识变量OLS模型中，以2011年为基期，年份虚拟变量的系数呈现清晰的递增模式：\textit{trade\_year\_2012}（$+0.15$）、\textit{trade\_year\_2013}（$+0.48$）、\textit{trade\_year\_2014}（$+0.49$）、\textit{trade\_year\_2015}（$+0.54$）、\textit{trade\_year\_2016}（$+0.83$）和\textit{trade\_year\_2017}（$+1.15$）。这一序列的特征在于：2013年较2012年有大幅跳跃（$+0.33$），而2013--2015年间增幅相对平缓，年增约0.03至0.05，2015年后再次加速。该模式与描述统计分析中观察到的「2011--2015年初平缓上涨、2015下半年后加速攀升」完全吻合。
 
 若将\textit{trade\_year}作为连续线性变量（系数0.180），等效于为所有年份施加了「年增幅约19.7\%」的单一系数，这必然低估2015年后的涨幅并高估2011--2014年的涨幅。时间固定效应通过年份虚拟变量解决了这一问题，避免了依赖\textit{trade\_year}$^{2}$项来部分捕捉非线性趋势的妥协。月度虚拟变量的系数也从2月（$+0.046$）逐步递增至12月（$+0.190$），反映了一年内的季节性价格上升趋势。
+
+% ──────────────────────────────
+%  六、模型诊断
+% ──────────────────────────────
+\section{模型诊断}
+
+本章的模型诊断基于全变量OLS模型的子样本（20\,000行）进行。选择子样本的主要原因如下：全量训练集（254\,528行 $\times$ 64个特征）上\texttt{statsmodels}的影响诊断（帽子矩阵、Cook's距离等）计算开销极大，本团队现有计算设备无法在合理时间内完成全样本的矩阵分解与杠杆值计算。经验表明，20\,000行的样本/特征比已超过300:1，对于VIF、Breusch-Pagan检验、Durbin-Watson检验等诊断统计量而言，这一样本量在统计推断层面完全充分。后文报告的各项诊断结果均基于该子样本。
+
+\subsection{诊断检验结果}
+
+\begin{table}[H]
+\centering
+\caption{模型诊断结果汇总}
+\label{tab:diagnostics}
+\begin{tabular}{lp{10cm}}
+\toprule
+检验项目 & 结果 \\
+\midrule
+VIF $>$ 10 变量数 & 9个：buildingStructure系列、square、log\_square、trade\_year\_2016/2015/2017 \\
+最大VIF（不含常数项） & 492.4（buildingStructure\_6） \\
+条件数 & $4.59\times10^{5}$（较原模型 $7.84\times10^{6}$ 大幅改善） \\
+Breusch-Pagan检验 & LM=957.6，$p=1.8\times10^{-159}$，拒绝同方差 \\
+Goldfeld-Quandt检验 & $F=0.979$，$p=0.857$，不拒绝同方差 \\
+Durbin-Watson统计量 & 1.966，无自相关 \\
+Cook's D异常点比例 & 4.74\%（947/20\,000）超过阈值 \\
+HC3下显著性改变量 & 1个变量（fiveYearsProperty\_1.0） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{04_diagnostics/vif_bar_chart.png}
+\caption{方差膨胀因子（前20名变量，红色虚线为VIF=10阈值）}
+\label{fig:vif}
+\end{figure}
+
+\subsection{多重共线性讨论}
+
+表~\ref{tab:diagnostics}~报告了VIF诊断结果。\textit{buildingStructure\_6}和\textit{buildingStructure\_2}存在严重的多重共线性。这与\textit{buildingStructure}变量的类别分布密切相关：某些结构类别的占比极低，导致相应的虚拟变量与其他结构类别之间呈现近乎完全的线性关系。此外，\textit{square}和\textit{log\_square}之间的高度相关性也反映了面积变量在对数-线性变换后的共线性问题。部分年份虚拟变量的VIF超过10，这是以2011年为高基期、多年度同时纳入模型时的自然结果。
+
+对于以OLS为基础的统计论文，9个VIF大于10的变量虽然不影响模型的整体预测能力，但会膨胀个体系数的标准误、降低估计精度。加入时间固定效应后条件数从$7.84\times10^{6}$降至$4.59\times10^{5}$，这是因为原模型中的\textit{trade\_year}连续变量与其平方项之间存在大量共线性，被年份虚拟变量替代后这一来源得到消除。在第五节的模型比较中已揭示，多项式模型因高阶项引发的多重共线性严重损害了系数可解释性（条件数升至$1.11\times10^{12}$），进一步印证了线性主效应设定的合理性。
+
+\subsection{异方差与残差分析}
+
+Breusch-Pagan检验在1\%水平上显著拒绝同方差假设，而Goldfeld-Quandt检验未能检测到异方差。两个检验结论的不一致根源在于检验功效和敏感性的差异：BP检验对一般形式的异方差均敏感，而GQ检验仅对排序后单调变化的方差敏感。
+
+残差诊断图显示，当拟合值增大时残差幅度呈现扩散趋势，这一漏斗状模式支持BP检验的结论，即样本中存在不可忽略的异方差。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{04_diagnostics/residual_diagnostics.png}
+\caption{残差诊断图（第一行：残差vs拟合值、正态Q-Q图、尺度-位置图；第二行：残差分布、残差vs杠杆值、实际值vs预测值）}
+\label{fig:residual}
+\end{figure}
+
+\subsection{稳健标准误}
+
+采用HC3稳健标准误对OLS系数进行校正。结果表明校正后仅一个变量\textit{fiveYearsProperty\_1.0}的显著性判断发生改变，从$p=0.048$变为$p=0.053$，略超5\%阈值。这一结果优于原模型，说明加入时间固定效应后异方差对推断的干扰进一步减弱。因此，HC3稳健标准误的使用主要作为学术严谨性的必要组成部分，而非因为实质性改变了结论。
+
+截面数据的异方差在真实世界中是常态而非异常。本研究从事前和事后两个层面确保了推断的可靠性。事前，半对数设定将绝对差异转化为相对差异，从数据变换的根源上缓解了方差随价格水平递增的趋势。事后，HC3稳健协方差矩阵的修正进一步消除了异方差对标准误估计的干扰。因此，即便Breusch-Pagan检验明确拒绝了同方差假设，核心变量边际效应的推断结果仍然是稳健且可靠的。
+
+\subsection{DOM缺失值处理的稳健性}
+
+\textit{DOM}缺失率达50\%，为检验其处理方式对核心结论的影响，本文比较了两种设定：包含\textit{DOM}与\textit{DOM\_missing}（基准）和完全剔除\textit{DOM}及其指示变量。结果表明，剔除\textit{DOM}后模型$R^{2}$从0.8185微降至0.8175，核心变量系数的最大变化不足1\%：距市中心距离系数从$-2.689$变为$-2.698$（差异0.33\%），梯户比系数从0.168变为0.167（差异0.42\%）。此外，\textit{DOM\_missing}的系数显著为负（$-0.028$，$p<0.001$），表明\textit{DOM}缺失的房源系统性地价格偏低，与非随机缺失的推论一致。上述结果证实，\textit{DOM}缺失值的处理方式未对核心变量的经济推断构成实质性威胁。
 
 % ──────────────────────────────
 %  七、结论
@@ -419,4 +447,30 @@ Journal of Real Estate Literature, 2005, 13(1): 1--44.
 
 \end{thebibliography}
 
+% ──────────────────────────────
+%  附录
+% ──────────────────────────────
+\clearpage
+\newgeometry{left=1.5cm, right=1.5cm, top=2cm, bottom=2cm}
+\section*{附录}
+\addcontentsline{toc}{section}{附录}
+
+本研究的全部数据分析与模型计算均使用 Python 语言完成，主要依赖 pandas、numpy、scipy、matplotlib、seaborn、statsmodels 和 scikit-learn 等开源库。数据来源于 Kaggle 开放数据平台上的链家北京二手房交易数据集（\url{https://www.kaggle.com/datasets/ruiqurm/lianjia}）。以下按分析流程列出各脚本的完整代码。
+
+\subsection*{01\_exploratory.py —— 探索性数据分析}
+\lstinputlisting{code/01_exploratory.py}
+
+\subsection*{02\_preprocessing.py —— 数据预处理}
+\lstinputlisting{code/02_preprocessing.py}
+
+\subsection*{03\_variable\_selection.py —— 变量选择}
+\lstinputlisting{code/03_variable_selection.py}
+
+\subsection*{04\_model\_diagnostics.py —— 模型诊断}
+\lstinputlisting{code/04_model_diagnostics.py}
+
+\subsection*{05\_model\_comparison.py —— 模型比较}
+\lstinputlisting{code/05_model_comparison.py}
+
+\restoregeometry
 \end{document}
